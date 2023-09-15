@@ -1,0 +1,40 @@
+---
+esphome:
+  name: $devicename
+  platform: ESP8266
+  board: d1_mini
+
+substitutions:
+  devicename: garage
+
+# Exposed switches.
+switch:
+  - platform: gpio
+    id: relay
+    name: Garagedeur openen
+    pin: GPIO5
+    on_turn_on:
+      - delay: 250ms
+      - switch.turn_off: relay
+
+# Binary sensor representing the
+# Garagedeur button push.
+binary_sensor:
+  - platform: gpio
+    pin:
+      number: D2
+      mode: INPUT_PULLUP
+    name: Garagedeur
+    filters:
+      - delayed_on_off: 1000ms
+    device_class: window
+  - platform: gpio
+    pin:
+      number: D3
+      mode: INPUT_PULLUP
+    name: Tussendeur
+    filters:
+      - delayed_on_off: 1000ms
+    device_class: window
+
+<<: !include common.yaml

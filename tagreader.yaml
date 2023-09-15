@@ -1,0 +1,224 @@
+---
+esphome:
+  name: $name
+  platform: ESP8266
+  board: d1_mini
+
+  # Automatically add the mac address to the name
+  # so you can use a single firmware for all devices
+#  name_add_mac_suffix: true
+
+  # This will allow for (future) project identification,
+  # configuration and updates.
+  project:
+    name: adonno.tag_reader
+    version: "1.4"
+
+dashboard_import:
+  package_import_url: github://adonno/tagreader/tagreader.yaml
+
+improv_serial:
+
+substitutions:
+  name: tagreader
+  devicename: tagreader
+  friendly_name: TagReader
+
+# Define switches to control LED and buzzer from HA
+switch:
+- platform: template
+  name: "${friendly_name} Buzzer Enabled"
+  id: buzzer_enabled
+  icon: mdi:volume-high
+  optimistic: true
+  restore_mode: RESTORE_DEFAULT_ON
+  entity_category: config
+- platform: template
+  name: "${friendly_name} LED enabled"
+  id: led_enabled
+  icon: mdi:alarm-light-outline
+  optimistic: true
+  restore_mode: RESTORE_DEFAULT_ON
+  entity_category: config
+
+# Define buttons for writing tags via HA
+button:
+  - platform: template
+    name: Write Tag Random
+    id: write_tag_random
+    # Optional variables:
+    icon: "mdi:pencil-box"
+    on_press:
+      then:
+      - lambda: |-
+          static const char alphanum[] = "0123456789abcdef";
+          std::string uri = "https://www.home-assistant.io/tag/";
+          for (int i = 0; i < 8; i++)
+            uri += alphanum[random_uint32() % (sizeof(alphanum) - 1)];
+          uri += "-";
+          for (int j = 0; j < 3; j++) {
+            for (int i = 0; i < 4; i++)
+              uri += alphanum[random_uint32() % (sizeof(alphanum) - 1)];
+            uri += "-";
+          }
+          for (int i = 0; i < 12; i++)
+            uri += alphanum[random_uint32() % (sizeof(alphanum) - 1)];
+          auto message = new nfc::NdefMessage();
+          message->add_uri_record(uri);
+          ESP_LOGD("tagreader", "Writing payload: %s", uri.c_str());
+          id(pn532_board).write_mode(message);
+      - wait_until:
+          not:
+            pn532.is_writing:
+  - platform: template
+    name: Clean Tag
+    id: clean_tag
+    icon: "mdi:nfc-variant-off"
+    on_press:
+      then:
+      - lambda: 'id(pn532_board).clean_mode();'
+      - wait_until:
+          not:
+            pn532.is_writing:
+  - platform: template
+    name: Cancel writing
+    id: cancel_writing
+    icon: "mdi:pencil-off"
+    on_press:
+      then:
+      - lambda: 'id(pn532_board).read_mode();'
+
+  - platform: restart
+    name: "${friendly_name} Restart"
+    entity_category: config
+
+api:
+  services:
+  - service: write_tag_id
+    variables:
+      tag_id: string
+    then:
+    - lambda: |-
+        auto message = new nfc::NdefMessage();
+        std::string uri = "https://www.home-assistant.io/tag/";
+        uri += tag_id;
+        message->add_uri_record(uri);
+        id(pn532_board).write_mode(message);
+  - service: write_music_tag
+    variables:
+      music_url: string
+      music_info: string
+    then:
+    - lambda: |-
+        auto message = new nfc::NdefMessage();
+        std::string uri = "";
+        std::string text = "";
+        uri += music_url;
+        text += music_info;
+        if ( music_url != "" ) {
+          message->add_uri_record(uri);
+        }
+        if ( music_info != "" ) {
+          message->add_text_record(text);
+        }
+        id(pn532_board).write_mode(message);
+
+i2c:
+  scan: False
+  frequency: 400kHz
+
+globals:
+  - id: source
+    type: std::string
+  - id: url
+    type: std::string
+  - id: info
+    type: std::string
+
+pn532_i2c:
+  id: pn532_board
+  on_tag:
+    then:
+    - delay: 0.15s #to fix slow component
+
+    - lambda: |-
+        id(source)="";
+        id(url)="";
+        id(info)="";
+        if (tag.has_ndef_message()) {
+          auto message = tag.get_ndef_message();
+          auto records = message->get_records();
+          for (auto &record : records) {
+            std::string payload = record->get_payload();
+            std::string type = record->get_type();
+            size_t hass = payload.find("https://www.home-assistant.io/tag/");
+            size_t applemusic = payload.find("https://music.apple.com");
+            size_t spotify = payload.find("https://open.spotify.com");
+            size_t sonos = payload.find("sonos-2://");
+
+            if (type == "U" and hass != std::string::npos ) {
+              ESP_LOGD("tagreader", "Found Home Assistant tag NDEF");
+              id(source)="hass";
+              id(url)=payload;
+              id(info)=payload.substr(hass + 34);
+            }
+            else if (type == "U" and applemusic != std::string::npos ) {
+              ESP_LOGD("tagreader", "Found Apple Music tag NDEF");
+              id(source)="amusic";
+              id(url)=payload;
+            }
+            else if (type == "U" and spotify != std::string::npos ) {
+              ESP_LOGD("tagreader", "Found Spotify tag NDEF");
+              id(source)="spotify";
+              id(url)=payload;
+            }
+            else if (type == "U" and sonos != std::string::npos ) {
+              ESP_LOGD("tagreader", "Found Sonos app tag NDEF");
+              id(source)="sonos";
+              id(url)=payload;
+            }
+            else if (type == "T" ) {
+              ESP_LOGD("tagreader", "Found music info tag NDEF");
+              id(info)=payload;
+            }
+            else if ( id(source)=="" ) {
+              id(source)="uid";
+            }
+          }
+        }
+        else {
+          id(source)="uid";
+        }
+
+    - if:
+        condition:
+          lambda: 'return ( id(source)=="uid" );'
+        then:
+          - homeassistant.tag_scanned: !lambda |-
+              ESP_LOGD("tagreader", "No HA NDEF, using UID");
+              return x;
+        else:
+        - if:
+            condition:
+              lambda: 'return ( id(source)=="hass" );'
+            then:
+            - homeassistant.tag_scanned: !lambda 'return id(info);'
+            else:
+            - homeassistant.event:
+                event: esphome.music_tag
+                data:
+                  reader: !lambda |-
+                    return App.get_name().c_str();
+                  source: !lambda |-
+                    return id(source);
+                  url: !lambda |-
+                    return id(url);
+                  info: !lambda |-
+                    return id(info);
+
+  on_tag_removed:
+    then:
+    - homeassistant.event:
+        event: esphome.tag_removed
+
+<<: !include common.yaml

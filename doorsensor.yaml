@@ -1,0 +1,45 @@
+---
+esphome:
+  name: doorsensor
+  platform: ESP8266
+  board: d1_mini
+
+substitutions:
+  devicename: doorsensor
+
+binary_sensor:
+  - platform: gpio
+    pin:
+      number: D1
+      mode: INPUT_PULLUP
+    name: Voordeur
+    filters:
+      - delayed_on_off: 1000ms
+    device_class: window
+
+light:
+  - platform: binary
+    name: "Net (groen)"
+    output: light_net
+  - platform: binary
+    name: "Storing (rood)"
+    output: light_storing
+  - platform: binary
+    name: "Alarm (rood)"
+    output: light_alarm
+
+output:
+  - id: light_net
+    platform: gpio
+    pin:
+      number: D7
+  - id: light_storing
+    platform: gpio
+    pin:
+      number: D6
+  - id: light_alarm
+    platform: gpio
+    pin:
+      number: D8
+
+<<: !include common.yaml
