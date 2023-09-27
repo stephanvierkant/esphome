@@ -5,7 +5,7 @@ esphome:
   board: d1_mini
 
 substitutions:
-  devicename: doorsensor
+  devicename: $devicename
 
 binary_sensor:
   - platform: gpio
@@ -16,6 +16,49 @@ binary_sensor:
     filters:
       - delayed_on_off: 1000ms
     device_class: window
+
+sensor:
+  - platform: pulse_counter
+    pin:
+      number: D5
+    update_interval : 6s
+    name: "water pulse"
+    id: water_pulse
+
+  - platform: pulse_meter
+    pin:
+      number: D5
+    name: "Water Pulse Meter"
+    unit_of_measurement: "liter/min"
+    icon: "mdi:water"
+    total:
+      name: "Water Total"
+      unit_of_measurement: "liter"
+
+  - platform: pulse_meter
+    pin:
+      number: D5
+    name: "Water Pulse Meter"
+    unit_of_measurement: "liter/min"
+    icon: "mdi:water"
+    total:
+      name: "Water Meter Total"
+      unit_of_measurement: "m³"
+      id: water_meter_total
+      accuracy_decimals: 3
+      device_class: water
+      state_class: total_increasing
+      filters:
+        - multiply: 0.001
+
+  - platform: template
+    name: "Water Usage Liter"
+    id: water_flow_rate
+    accuracy_decimals: 1
+    unit_of_measurement: "l/min"
+    icon: "mdi:water"
+    lambda: return (id(water_pulse).state * 10);
+    update_interval: 6s
 
 light:
   - platform: binary
