@@ -1,0 +1,46 @@
+---
+esphome:
+  name: $devicename
+  platform: ESP8266
+  board: d1_mini
+
+substitutions:
+  devicename: watermeter
+
+sensor:
+  - platform: ultrasonic
+    trigger_pin: D1
+    echo_pin: D2
+    name: garden_watertank_distance
+    update_interval: 600s
+    filters:
+      - filter_out: nan
+      - calibrate_linear:
+          - 0 -> 1.45
+          - 1.45 -> 0.0
+    pulse_time: 40us
+    timeout: 4.0m
+    on_value:
+      then:
+        - sensor.template.publish:
+            id: garden_watertank_liter
+            state: !lambda 'return x * 250;'
+
+        - sensor.template.publish:
+            id: garden_watertank_percent
+            state: !lambda 'return x * 66;'
+
+  - platform: template
+    name: garden_watertank_liter
+    id: garden_watertank_liter
+    icon: 'mdi:water'
+    unit_of_measurement: 'l'
+    accuracy_decimals: 0
+
+  - platform: template
+    name: garden_watertank_percent
+    id: garden_watertank_percent
+    icon: 'mdi:water-percent'
+    unit_of_measurement: '%'
+
+<<: !include common.yaml

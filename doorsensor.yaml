@@ -1,11 +1,11 @@
 ---
 esphome:
-  name: doorsensor
+  name: $devicename
   platform: ESP8266
   board: d1_mini
 
 substitutions:
-  devicename: $devicename
+  devicename: doorsensor
 
 binary_sensor:
   - platform: gpio
