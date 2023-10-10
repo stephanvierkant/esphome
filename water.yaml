@@ -24,7 +24,7 @@ sensor:
       then:
         - sensor.template.publish:
             id: garden_watertank_liter
-            state: !lambda 'return x * 250;'
+            state: !lambda 'return pow((40 + (x * 6.6)), 2) * x / 10;'
 
         - sensor.template.publish:
             id: garden_watertank_percent
