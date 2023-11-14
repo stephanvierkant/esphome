@@ -1,0 +1,80 @@
+---
+esphome:
+  name: $devicename
+  platform: ESP8266
+  board: d1_mini
+
+substitutions:
+  devicename: brandweerauto
+
+binary_sensor:
+  - platform: gpio
+    id: geluid_button
+    name: Geluid Button
+    icon: mdi:volume-high
+    pin:
+      mode: INPUT_PULLUP
+      number: D1
+      inverted: true
+
+  - platform: gpio
+    id: alarmlichten_button
+    name: Alarmlichten Button
+    icon: mdi:flash-triangle-outline
+    pin:
+      mode: INPUT_PULLUP
+      number: D2
+      inverted: true
+    on_press:
+      - if:
+          condition:
+            - switch.is_on: buttons
+          then:
+            - switch.turn_on: alarmlichten
+            - delay: 5s
+            - switch.turn_off: alarmlichten
+
+  - platform: gpio
+    id: licht_button
+    name: Licht Button
+    icon: mdi:lightbulb-on-10
+    pin:
+      mode: INPUT_PULLUP
+      number: D3
+      inverted: true
+
+  - platform: gpio
+    id: zwaailampen_button
+    name: Zwaailampen Button
+    icon: mdi:alarm-light
+    pin:
+      mode: INPUT_PULLUP
+      number: D4
+      inverted: true
+    on_press:
+      - if:
+          condition:
+            - switch.is_on: buttons
+          then:
+            - switch.turn_on: zwaailichten
+            - delay: 5s
+            - switch.turn_off: zwaailichten
+
+switch:
+  - platform: gpio
+    id: zwaailichten
+    name: Zwaailampen
+    icon: mdi:alarm-light
+    pin: D5
+  - platform: gpio
+    id: alarmlichten
+    name: Alarmlichten
+    pin: D6
+    icon: mdi:flash-triangle-outline
+  - platform: gpio
+    id: buttons
+    name: Knoppen
+    icon: mdi:gesture-tap-button
+    pin: D7
+
+<<: !include common.yaml
