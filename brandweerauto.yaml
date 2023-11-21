@@ -61,6 +61,15 @@ binary_sensor:
             - switch.turn_on: zwaailichten
             - delay: 20s
             - switch.turn_off: zwaailichten
+    on_multi_click:
+      - timing:
+          - ON for at most 1s
+          - OFF for at most 1s
+          - ON for at least 1s
+          - OFF for at most 1s
+          - ON for at most 1s
+        then:
+          - switch.turn_on: buttons
 switch:
   - platform: gpio
     id: zwaailichten
