@@ -32,16 +32,6 @@ sensor:
     unit_of_measurement: "liter/min"
     icon: "mdi:water"
     total:
-      name: "Water Total"
-      unit_of_measurement: "liter"
-
-  - platform: pulse_meter
-    pin:
-      number: D5
-    name: "Water Pulse Meter"
-    unit_of_measurement: "liter/min"
-    icon: "mdi:water"
-    total:
       name: "Water Meter Total"
       unit_of_measurement: "m³"
       id: water_meter_total
@@ -60,29 +50,73 @@ sensor:
     lambda: return (id(water_pulse).state * 10);
     update_interval: 6s
 
+button:
+  - platform: template
+    name: "Alles uit"
+    on_press:
+      - light.turn_off:
+          id: boven
+      - light.turn_off:
+          id: midden
+      - light.turn_off:
+          id: onder
+  - platform: template
+    name: "Vlag"
+    on_press:
+      - light.turn_on:
+          id: boven
+          brightness: 100%
+          red: 100%
+          green: 0%
+          blue: 0%
+      - light.turn_on:
+          id: midden
+          brightness: 100%
+          red: 100%
+          green: 100%
+          blue: 100%
+      - light.turn_on:
+          id: onder
+          brightness: 100%
+          red: 0%
+          green: 0%
+          blue: 100%
+
 light:
-  - platform: binary
-    name: "Net (groen)"
-    output: light_net
-  - platform: binary
-    name: "Storing (rood)"
-    output: light_storing
-  - platform: binary
-    name: "Alarm (rood)"
-    output: light_alarm
+  - platform: partition
+    name: "Boven"
+    id: boven
+    segments:
+      # Use first 10 LEDs from the light with ID light1
+      - id: neopixel
+        from: 2
+        to: 2
+    effects: !include { file: light-effects.yaml }
 
-output:
-  - id: light_net
-    platform: gpio
-    pin:
-      number: D7
-  - id: light_storing
-    platform: gpio
-    pin:
-      number: D6
-  - id: light_alarm
-    platform: gpio
-    pin:
-      number: D8
+  - platform: partition
+    id: midden
+    name: "Midden"
+    segments:
+      - id: neopixel
+        from: 1
+        to: 1
+    effects: !include { file: light-effects.yaml }
 
+  - platform: partition
+    id: onder
+    name: "Onder"
+    segments:
+      - id: neopixel
+        from: 0
+        to: 0
+    effects: !include { file: light-effects.yaml }
+
+  - platform: neopixelbus
+    id: neopixel
+    type: RGB
+    internal: true
+    variant: WS2812
+    pin: D2
+    num_leds: 3
+    name: "NeoPixel Light"
 <<: !include common.yaml

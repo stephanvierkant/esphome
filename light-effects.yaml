@@ -1,0 +1,45 @@
+- strobe:
+    name: Rood knipperend
+    colors:
+      - state: true
+        brightness: 100%
+        red: 100%
+        green: 0%
+        blue: 0%
+        duration: 500ms
+      - state: true
+        brightness: 0%
+        red: 100%
+        green: 0%
+        blue: 0%
+        duration: 500ms
+- strobe:
+    name: Groen knipperend
+    colors:
+      - state: true
+        brightness: 100%
+        red: 0%
+        green: 100%
+        blue: 0%
+        duration: 500ms
+      - state: true
+        brightness: 0%
+        red: 100%
+        green: 0%
+        blue: 0%
+        duration: 500ms
+- strobe:
+    name: Groen/rood knipperend
+    colors:
+      - state: true
+        brightness: 100%
+        red: 100%
+        green: 0%
+        blue: 0%
+        duration: 500ms
+      - state: true
+        brightness: 100%
+        red: 0%
+        green: 100%
+        blue: 0%
+        duration: 500ms
