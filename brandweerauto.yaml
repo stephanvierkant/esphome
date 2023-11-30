@@ -14,8 +14,17 @@ binary_sensor:
     icon: mdi:volume-high
     pin:
       mode: INPUT_PULLUP
-      number: D2
+      number: D4
       inverted: true
+    on_multi_click:
+      - timing:
+          - ON for at most 1s
+          - OFF for at most 1s
+          - ON for at least 1s
+          - OFF for at most 1s
+          - ON for at most 1s
+        then:
+          - switch.toggle: buttons
 
   - platform: gpio
     id: alarmlichten_button
@@ -29,11 +38,8 @@ binary_sensor:
       - if:
           condition:
             - switch.is_on: buttons
-            - switch.is_off: alarmlichten
           then:
-            - switch.turn_on: alarmlichten
-            - delay: 20s
-            - switch.turn_off: alarmlichten
+            - switch.toggle: alarmlichten
 
   - platform: gpio
     id: licht_button
@@ -41,7 +47,7 @@ binary_sensor:
     icon: mdi:lightbulb-on-10
     pin:
       mode: INPUT_PULLUP
-      number: D4
+      number: D2
       inverted: true
 
   - platform: gpio
@@ -61,15 +67,11 @@ binary_sensor:
             - switch.turn_on: zwaailichten
             - delay: 20s
             - switch.turn_off: zwaailichten
-    on_multi_click:
-      - timing:
-          - ON for at most 1s
-          - OFF for at most 1s
-          - ON for at least 1s
-          - OFF for at most 1s
-          - ON for at most 1s
-        then:
-          - switch.turn_on: buttons
+      - if:
+          condition:
+            - switch.is_on: zwaailichten
+          then:
+            - switch.turn_off: zwaailichten
 switch:
   - platform: gpio
     id: zwaailichten
