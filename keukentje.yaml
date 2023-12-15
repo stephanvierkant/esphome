@@ -100,6 +100,7 @@ light:
       - id: keuken_neopixel
         from: 1
         to: 3
+    effects: !include { file: light-effects.yaml }
   - platform: partition
     name: "Keuken spotje 3"
     id: keuken_spotje3
