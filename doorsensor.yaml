@@ -144,9 +144,10 @@ light:
   - platform: neopixelbus
     id: neopixel
     type: RGB
-    internal: true
     variant: WS2812
     pin: D2
     num_leds: 3
     name: "NeoPixel Light"
+    effects: !include { file: light-effects.yaml }
+
 <<: !include common.yaml

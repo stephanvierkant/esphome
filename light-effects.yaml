@@ -43,6 +43,7 @@
         green: 100%
         blue: 0%
         duration: 500ms
+- addressable_fireworks:
 - addressable_color_wipe:
 - addressable_rainbow:
 - addressable_random_twinkle:

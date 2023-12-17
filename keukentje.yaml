@@ -92,6 +92,7 @@ light:
       - id: keuken_neopixel
         from: 0
         to: 0
+    effects: !include { file: light-effects.yaml }
 
   - platform: partition
     name: "Keuken spotjes"
@@ -99,37 +100,17 @@ light:
     segments:
       - id: keuken_neopixel
         from: 1
-        to: 3
+        to: 18
     effects: !include { file: light-effects.yaml }
-  - platform: partition
-    name: "Keuken spotje 3"
-    id: keuken_spotje3
-    segments:
-      - id: keuken_neopixel
-        from: 1
-        to: 1
-  - platform: partition
-    name: "Keuken spotje 2"
-    id: keuken_spotje2
-    segments:
-      - id: keuken_neopixel
-        from: 2
-        to: 2
-  - platform: partition
-    name: "Keuken spotje 1"
-    id: keuken_spotje1
-    segments:
-      - id: keuken_neopixel
-        from: 3
-        to: 3
 
   - platform: partition
     name: "Magnetron"
     id: keuken_magnetron_licht
     segments:
       - id: keuken_neopixel
-        from: 4
-        to: 4
+        from: 19
+        to: 19
+    effects: !include { file: light-effects.yaml }
 
   - platform: neopixelbus
     icon: mdi:stove
@@ -138,6 +119,6 @@ light:
     internal: true
     variant: SK6812
     pin: D4
-    num_leds: 5
+    num_leds: 20
 
 <<: !include common.yaml
