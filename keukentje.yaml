@@ -87,6 +87,7 @@ binary_sensor:
 light:
   - platform: partition
     id: keuken_oven_licht
+    icon: mdi:stove
     name: "Oven"
     segments:
       - id: keuken_neopixel
@@ -97,28 +98,29 @@ light:
   - platform: partition
     name: "Keuken spotjes"
     id: keuken_spotjes
+    icon: mdi:led-strip-variant
     segments:
       - id: keuken_neopixel
         from: 1
-        to: 18
+        to: 19
     effects: !include { file: light-effects.yaml }
 
   - platform: partition
     name: "Magnetron"
     id: keuken_magnetron_licht
+    icon: mdi:microwave
     segments:
       - id: keuken_neopixel
-        from: 19
-        to: 19
+        from: 20
+        to: 20
     effects: !include { file: light-effects.yaml }
 
   - platform: neopixelbus
-    icon: mdi:stove
     id: keuken_neopixel
     type: GRB
     internal: true
     variant: SK6812
     pin: D4
-    num_leds: 20
+    num_leds: 21
 
 <<: !include common.yaml
