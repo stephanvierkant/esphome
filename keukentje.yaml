@@ -51,6 +51,29 @@ binary_sensor:
             green: 100%
             blue: 100%
             brightness: 100%
+    on_release:
+      then:
+        - light.control:
+            id: keuken_magnetron_licht
+            state: on
+            brightness: 75%
+            effect: none
+        - delay: 3s
+        - light.control:
+            id: keuken_magnetron_licht
+            state: on
+            effect: Fireworks
+            brightness: 100%
+        - delay: 3s
+        - light.control:
+            id: keuken_magnetron_licht
+            state: on
+            effect: Groen knipperend
+        - delay: 3s
+        - light.control:
+            id: keuken_magnetron_licht
+            brightness: 50%
+            effect: none
 
   # Oven
   - platform: gpio
@@ -82,7 +105,7 @@ binary_sensor:
             green: 0%
             blue: 0%
             brightness: 100%
-            transition_length: 30s
+            transition_length: 10s
 
 light:
   - platform: partition
