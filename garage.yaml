@@ -12,7 +12,8 @@ switch:
   - platform: gpio
     id: relay
     name: Garagedeur openen
-    pin: GPIO5
+    pin:
+      number: D1
     on_turn_on:
       - delay: 250ms
       - switch.turn_off: relay

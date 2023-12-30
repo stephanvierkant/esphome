@@ -26,9 +26,11 @@ binary_sensor:
       mode: INPUT_PULLUP
       inverted: true
     name: Knop 2
-    on_release:
+    on_press:
       then:
         - light.turn_on: keuken_spotjes
+        - light.toggle: keuken_kookplaat_voor
+        - light.toggle: keuken_kookplaat_achter
         - if:
             condition:
               binary_sensor.is_on: keuken_knop1
@@ -38,7 +40,7 @@ binary_sensor:
   # Magnetron
   - platform: gpio
     pin:
-      number: D6
+      number: D5
       mode: INPUT_PULLUP
     name: Magnetron deurtje
     device_class: window
@@ -93,16 +95,17 @@ binary_sensor:
             brightness: 100%
     on_release:
       then:
-        - light.turn_on:
+        - light.control:
+            state: on
             id: keuken_oven_licht
             red: 100%
-            green: 75%
-            blue: 0%
-            brightness: 100%
-        - light.turn_on:
+            green: 100%
+            blue: 100%
+            brightness: 20%
+        - light.control:
             id: keuken_oven_licht
             red: 100%
-            green: 0%
+           k green: 0%
             blue: 0%
             brightness: 100%
             transition_length: 10s
@@ -145,5 +148,32 @@ light:
     variant: SK6812
     pin: D4
     num_leds: 21
+
+    # Kookplaat
+  - platform: neopixelbus
+    id: keuken_kookplaat
+    type: RGB
+    internal: true
+    variant: WS2812
+    pin: D6
+    num_leds: 6
+
+  - platform: partition
+    name: "Kookplaat achter"
+    id: keuken_kookplaat_achter
+    icon: mdi:gas-burner
+    segments:
+      - id: keuken_kookplaat
+        from: 0
+        to: 2
+
+  - platform: partition
+    name: "Kookplaat voor"
+    id: keuken_kookplaat_voor
+    icon: mdi:gas-burner
+    segments:
+      - id: keuken_kookplaat
+        from: 3
+        to: 5
 
 <<: !include common.yaml
