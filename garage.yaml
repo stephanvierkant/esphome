@@ -26,6 +26,7 @@ binary_sensor:
       number: D2
       mode: INPUT_PULLUP
     name: Garagedeur
+    id: garagedeur_volledig_dicht
     filters:
       - delayed_on_off: 1000ms
     device_class: window
@@ -37,5 +38,33 @@ binary_sensor:
     filters:
       - delayed_on_off: 1000ms
     device_class: window
+  - platform: gpio
+    pin:
+      number: D6
+      mode: INPUT_PULLUP
+    name: Garagedeur geopend
+    id: garagedeur_volledig_open
+    filters:
+      - delayed_on_off: 1000ms
+    device_class: door
+
+  - platform: gpio
+    pin:
+      number: D5
+      mode: INPUT_PULLUP
+    filters:
+      - delayed_on_off: 1000ms
+    name: "PIR Sensor"
+    device_class: motion
+
+  - platform: template
+    id: garagedeur_moving
+    name: Garagedeur In beweging
+    lambda: |-
+      if ((id(garagedeur_volledig_open).state) and (id(garagedeur_volledig_dicht).state)) {
+        return true;
+      } else {
+        return false;
+      }
 
 <<: !include common.yaml

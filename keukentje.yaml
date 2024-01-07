@@ -7,6 +7,21 @@ esphome:
 substitutions:
   devicename: keukentje
 
+select:
+  - platform: template
+    name: "Licht-effect spotjes"
+    optimistic: true
+    options:
+      - Regenboog
+      - None
+    initial_option: None
+    id: licht_effect_spotjes
+    on_value:
+      then:
+        light.control:
+          id: keuken_spotjes
+          effect: !lambda return id(licht_effect_spotjes).state;
+
 binary_sensor:
   # Kookplaat
   - platform: gpio
@@ -16,9 +31,23 @@ binary_sensor:
       mode: INPUT_PULLUP
       inverted: true
     name: Knop 1
-    on_release:
-      then:
-        - light.turn_on: keuken_spotjes
+    on_click:
+      - max_length: 500ms
+        then:
+          - if:
+              condition:
+                light.is_on: keuken_spotjes
+              then:
+                - select.next: licht_effect_spotjes
+              else:
+                - light.turn_on: keuken_spotjes
+      - min_length: 500ms
+        max_length: 1000ms
+        then:
+          - light.turn_off: keuken_spotjes
+          - light.turn_off: keuken_magnetron_licht
+          - light.turn_off: keuken_oven_licht
+
   - platform: gpio
     id: keuken_knop2
     pin:
@@ -29,13 +58,16 @@ binary_sensor:
     on_press:
       then:
         - light.turn_on: keuken_spotjes
-        - light.toggle: keuken_kookplaat_voor
-        - light.toggle: keuken_kookplaat_achter
         - if:
             condition:
-              binary_sensor.is_on: keuken_knop1
+              light.is_on: keuken_kookplaat
             then:
-              - light.turn_off: keuken_neopixel
+              - light.turn_off: keuken_kookplaat
+            else:
+              - light.turn_on:
+                  id: keuken_kookplaat
+                  brightness: 100%
+                  red: 100%
 
   # Magnetron
   - platform: gpio
@@ -64,13 +96,14 @@ binary_sensor:
         - light.control:
             id: keuken_magnetron_licht
             state: on
-            effect: Fireworks
+            effect: Vuurwerk
             brightness: 100%
         - delay: 3s
         - light.control:
             id: keuken_magnetron_licht
             state: on
             effect: Groen knipperend
+            brightness: 100%
         - delay: 3s
         - light.control:
             id: keuken_magnetron_licht
@@ -105,7 +138,7 @@ binary_sensor:
         - light.control:
             id: keuken_oven_licht
             red: 100%
-           k green: 0%
+            green: 0%
             blue: 0%
             brightness: 100%
             transition_length: 10s
@@ -153,27 +186,9 @@ light:
   - platform: neopixelbus
     id: keuken_kookplaat
     type: RGB
-    internal: true
+    icon: mdi:gas-burner
     variant: WS2812
     pin: D6
     num_leds: 6
-
-  - platform: partition
-    name: "Kookplaat achter"
-    id: keuken_kookplaat_achter
-    icon: mdi:gas-burner
-    segments:
-      - id: keuken_kookplaat
-        from: 0
-        to: 2
-
-  - platform: partition
-    name: "Kookplaat voor"
-    id: keuken_kookplaat_voor
-    icon: mdi:gas-burner
-    segments:
-      - id: keuken_kookplaat
-        from: 3
-        to: 5
 
 <<: !include common.yaml
