@@ -13,8 +13,6 @@ binary_sensor:
       number: D1
       mode: INPUT_PULLUP
     name: Voordeur
-    filters:
-      - delayed_on_off: 1000ms
     device_class: window
 
 sensor:
