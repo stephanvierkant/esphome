@@ -9,15 +9,19 @@ substitutions:
 
 sensor:
   - platform: ultrasonic
+    internal: true
     trigger_pin: D1
     echo_pin: D2
     name: garden_watertank_distance
-    update_interval: 600s
+    update_interval: 60s
     filters:
       - filter_out: nan
       - calibrate_linear:
           - 0 -> 1.08
           - 1.08 -> 0.0
+      - sliding_window_moving_average:
+          window_size: 10
+          send_every: 5
     pulse_time: 40us
     timeout: 4.0m
     on_value:
@@ -35,6 +39,7 @@ sensor:
     id: garden_watertank_liter
     icon: 'mdi:water'
     unit_of_measurement: 'l'
+    state_class: "measurement"
     accuracy_decimals: 1
 
   - platform: template
