@@ -52,33 +52,36 @@ binary_sensor:
     name: "PIR Sensor"
     device_class: motion
 
-  - platform: template
-    internal: true
-    id: open_endstop
-    lambda: |-
-      return !id(garagedeur_volledig_open).state;
-  - platform: template
-    internal: true
-    id: close_endstop
-    lambda: |-
-      return !id(garagedeur_volledig_dicht).state;
-
 cover:
-  - platform: feedback
+  - platform: template
     name: "Garagedeur"
+    device_class: garage
 
-    has_built_in_endstop: true
+    lambda: |-
+      if (id(garagedeur_volledig_dicht).state == false) {
+        return COVER_CLOSED;
+      } else if (id(garagedeur_volledig_open).state == false) {
+        return COVER_OPEN;
+      } else {
+        return COVER_OPERATION_OPENING;
+      }
+
     open_action:
-      - switch.turn_on: relay
-    open_duration: 20s
-    open_endstop: open_endstop
+      - lambda: |-
+          if (!id(garage_tussendeur).state) {
+            id(relay).turn_on();
+          }
 
     close_action:
-      - switch.turn_on: relay
-    close_duration: 20s
-    close_endstop: close_endstop
+      - lambda: |-
+          if (!id(garage_tussendeur).state) {
+            id(relay).turn_on();
+          }
 
     stop_action:
-      - switch.turn_on: relay
+      - lambda: |-
+          if (!id(garage_tussendeur).state) {
+            id(relay).turn_on();
+          }
 
 <<: !include common.yaml
