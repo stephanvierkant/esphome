@@ -52,6 +52,18 @@ binary_sensor:
     name: "PIR Sensor"
     device_class: motion
 
+  - platform: template
+    id: motion_doors
+    device_class: motion
+    name: "Beweging deuren"
+    lambda: |-
+      if (id(garagedeur_volledig_dicht).state && id(garagedeur_volledig_open).state) {
+        return true;
+      } else if (id(garage_tussendeur).state) {
+        return true;
+      }
+      return false;
+
 cover:
   - platform: template
     name: "Garagedeur"
