@@ -1,0 +1,37 @@
+---
+esphome:
+  name: $devicename
+  platform: ESP8266
+  board: d1_mini
+
+substitutions:
+  devicename: lea
+
+light:
+  - platform: partition
+    id: lea_raam_rechts
+    name: "Raam rechts"
+    segments:
+      - id: lea_neopixel
+        from: 50
+        to: 85
+    effects: !include { file: light-effects.yaml }
+
+  - platform: partition
+    id: lea_achterkant
+    name: "Achterkant"
+    segments:
+      - id: lea_neopixel
+        from: 0
+        to: 49
+    effects: !include { file: light-effects.yaml }
+
+  - platform: neopixelbus
+    id: lea_neopixel
+    type: GRB
+    internal: true
+    variant: WS2812
+    pin: D3
+    num_leds: 86
+
+<<: !include common.yaml

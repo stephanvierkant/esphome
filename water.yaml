@@ -10,8 +10,8 @@ substitutions:
 sensor:
   - platform: ultrasonic
     internal: true
-    trigger_pin: D1
-    echo_pin: D2
+    trigger_pin: D2
+    echo_pin: D1
     name: garden_watertank_distance
     update_interval: 60s
     filters:
