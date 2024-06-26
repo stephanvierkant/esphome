@@ -51,3 +51,7 @@
     name: Regenboog
 - addressable_random_twinkle:
     name: Twinkle
+- addressable_twinkle:
+    name: Twinkle Traag
+    twinkle_probability: 5%
+    progress_interval: 10ms

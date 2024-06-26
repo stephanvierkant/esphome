@@ -1,29 +1,48 @@
 ---
 esphome:
   name: $devicename
-  platform: ESP8266
-  board: d1_mini
+  platform: esp32
+  board: lolin_s2_mini
 
 substitutions:
   devicename: lea
 
+debug:
+  update_interval: 5s
+
+text_sensor:
+  - platform: version
+    name: $devicename ESPHome Version
+  - platform: debug
+    device:
+      name: "Device Info"
+    reset_reason:
+      name: "Reset Reason"
+
 light:
+  - platform: partition
+    id: lea_hoofdeinde
+    name: "Hoofdeinde"
+    segments:
+      - id: lea_neopixel
+        from: 0
+        to: 49
+    effects: !include { file: light-effects.yaml }
+  - platform: partition
+    id: lea_voeteneind
+    name: "Voeteneind"
+    segments:
+      - id: lea_neopixel
+        from: 50
+        to: 99
+    effects: !include { file: light-effects.yaml }
   - platform: partition
     id: lea_raam_rechts
     name: "Raam rechts"
     segments:
       - id: lea_neopixel
-        from: 50
-        to: 85
-    effects: !include { file: light-effects.yaml }
-
-  - platform: partition
-    id: lea_achterkant
-    name: "Achterkant"
-    segments:
-      - id: lea_neopixel
-        from: 0
-        to: 49
+        from: 100
+        to: 135
     effects: !include { file: light-effects.yaml }
 
   - platform: neopixelbus
@@ -31,7 +50,54 @@ light:
     type: GRB
     internal: true
     variant: WS2812
-    pin: D3
-    num_leds: 86
+    pin: 17
+    num_leds: 136
+
+button:
+  - platform: template
+    id: avondroutine
+    name: Avondroutine
+    on_press:
+      - light.turn_on:
+          id: lea_hoofdeinde
+          transition_length: 0.5s
+          brightness: 20%
+          red: 100%
+          green: 20%
+          blue: 20%
+      - light.turn_off: lea_raam_rechts
+      - light.turn_on:
+          id: lea_voeteneind
+          brightness: 50%
+          effect: Twinkle Traag
+
+  - platform: template
+    name: Ochtendroutine
+    on_press:
+      - light.turn_off: lea_hoofdeinde
+      - light.turn_on:
+          id: lea_raam_rechts
+          brightness: 50%
+          effect: Twinkle
+      - lambda: |-
+          auto call = id(lea_voeteneind).turn_on();
+          call.set_brightness(0.5); // Helderheid op 20%
+          call.set_effect("None");
+          if (id(homeassistant_time).now().day_of_week == 1) {
+            call.set_rgb(0.0, 1.0, 0.0); // Groen voor zondag
+          } else if (id(homeassistant_time).now().day_of_week == 2) {
+            call.set_rgb(1.0, 1.0, 0.0); // Geel voor maandag
+          } else if (id(homeassistant_time).now().day_of_week == 3) {
+            call.set_rgb(1.0, 0.0, 0.0); // Rood voor dinsdag
+          } else if (id(homeassistant_time).now().day_of_week == 4) {
+            call.set_rgb(1.0, 0.75, 0.8); // Roze voor woensdag
+          } else if (id(homeassistant_time).now().day_of_week == 5) {
+            call.set_rgb(0.5, 0.0, 0.5); // Paars voor donderdag
+          } else if (id(homeassistant_time).now().day_of_week == 6) {
+            call.set_rgb(0.0, 0.0, 1.0); // Blauw voor vrijdag
+          } else if (id(homeassistant_time).now().day_of_week == 7) {
+            call.set_rgb(0.0, 1.0, 0.0); // Groen voor zaterdag
+          }
+          call.perform();
 
 <<: !include common.yaml
