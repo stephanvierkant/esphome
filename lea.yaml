@@ -1,23 +1,114 @@
 ---
 esphome:
   name: $devicename
-  platform: esp32
-  board: lolin_s2_mini
+  platform: ESP8266
+  board: d1_mini
 
 substitutions:
   devicename: lea
 
-debug:
-  update_interval: 5s
+sensor:
+  - platform: rotary_encoder
+    id: lea_rotary
+    name: "Rotary Encoder"
+    pin_a:
+      inverted: true
+      mode:
+        input: true
+        pullup: true
+      number: D3
+    pin_b:
+      inverted: false
+      mode:
+        input: true
+        pullup: true
+      number: D2
+    on_clockwise:
+      - if:
+          condition:
+            - light.is_on: lea_hoofdeinde
+            - lambda: return id(lea_hoofdeinde).remote_values.get_brightness() > 0.2;
+          then:
+            - light.dim_relative:
+                id: lea_hoofdeinde
+                relative_brightness: 5%
 
-text_sensor:
-  - platform: version
-    name: $devicename ESPHome Version
-  - platform: debug
-    device:
-      name: "Device Info"
-    reset_reason:
-      name: "Reset Reason"
+      - if:
+          condition:
+            light.is_on: lea_voeteneind
+          then:
+            - light.dim_relative:
+                id: lea_voeteneind
+                relative_brightness: 5%
+
+      - if:
+          condition:
+            light.is_on: lea_raam_rechts
+          then:
+            - light.dim_relative:
+                id: lea_raam_rechts
+                relative_brightness: 5%
+
+    on_anticlockwise:
+      - if:
+          condition:
+            light.is_on: lea_hoofdeinde
+          then:
+            - light.dim_relative:
+                id: lea_hoofdeinde
+                relative_brightness: -5%
+
+      - if:
+          condition:
+            light.is_on: lea_voeteneind
+          then:
+            - light.dim_relative:
+                id: lea_voeteneind
+                relative_brightness: -5%
+
+      - if:
+          condition:
+            light.is_on: lea_raam_rechts
+          then:
+            - light.dim_relative:
+                id: lea_raam_rechts
+                relative_brightness: -5%
+
+binary_sensor:
+  - platform: gpio
+    id: lea_rotary_push
+    pin:
+      number: D1
+      mode: INPUT_PULLUP
+      inverted: true
+    name: Knop 1
+    on_click:
+      - light.control:
+          id: lea_hoofdeinde
+          state: on
+          effect: Regenboog
+          brightness: 100%
+      - light.control:
+          id: lea_voeteneind
+          state: on
+          effect: Regenboog
+          brightness: 100%
+      - light.control:
+          id: lea_raam_rechts
+          state: on
+          effect: Regenboog
+          brightness: 100%
+
+  - platform: gpio
+    id: lea_bed_knopje
+    pin:
+      number: D7
+      mode: INPUT_PULLUP
+      inverted: true
+    name: Knop 2
+    on_click:
+      then:
+        - button.press: avondroutine
 
 light:
   - platform: partition
@@ -42,7 +133,7 @@ light:
     segments:
       - id: lea_neopixel
         from: 100
-        to: 135
+        to: 134
     effects: !include { file: light-effects.yaml }
 
   - platform: neopixelbus
@@ -50,26 +141,25 @@ light:
     type: GRB
     internal: true
     variant: WS2812
-    pin: 17
-    num_leds: 136
+    pin:
+      number: D4
+    num_leds: 135
 
 button:
   - platform: template
     id: avondroutine
     name: Avondroutine
     on_press:
-      - light.turn_on:
+      - light.control:
           id: lea_hoofdeinde
-          transition_length: 0.5s
+          effect: none
+          state: on
           brightness: 20%
           red: 100%
           green: 20%
           blue: 20%
       - light.turn_off: lea_raam_rechts
-      - light.turn_on:
-          id: lea_voeteneind
-          brightness: 50%
-          effect: Twinkle Traag
+      - light.turn_off: lea_voeteneind
 
   - platform: template
     name: Ochtendroutine
@@ -81,7 +171,7 @@ button:
           effect: Twinkle
       - lambda: |-
           auto call = id(lea_voeteneind).turn_on();
-          call.set_brightness(0.5); // Helderheid op 20%
+          call.set_brightness(0.25); // Helderheid op 20%
           call.set_effect("None");
           if (id(homeassistant_time).now().day_of_week == 1) {
             call.set_rgb(0.0, 1.0, 0.0); // Groen voor zondag
