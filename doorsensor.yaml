@@ -23,22 +23,6 @@ sensor:
     name: "water pulse"
     id: water_pulse
 
-  - platform: pulse_meter
-    pin:
-      number: D5
-    name: "Water Pulse Meter"
-    unit_of_measurement: "liter/min"
-    icon: "mdi:water"
-    total:
-      name: "Water Meter Total"
-      unit_of_measurement: "m³"
-      id: water_meter_total
-      accuracy_decimals: 3
-      device_class: water
-      state_class: total_increasing
-      filters:
-        - multiply: 0.001
-
   - platform: template
     name: "Water Usage Liter"
     id: water_flow_rate
