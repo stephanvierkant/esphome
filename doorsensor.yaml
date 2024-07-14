@@ -7,40 +7,98 @@ esphome:
 substitutions:
   devicename: doorsensor
 
+globals:
+  - id: chime
+    type: bool
+    restore_value: true
+    initial_value: 'true'
+
 binary_sensor:
   - platform: gpio
     pin:
-      number: D1
+      number: D5
       mode: INPUT_PULLUP
     name: Voordeur
     device_class: window
-
-sensor:
-  - platform: pulse_counter
+  - platform: gpio
+    id: doorbell_button
+    name: Deurbel knop
     pin:
-      number: D5
-    update_interval : 6s
-    name: "water pulse"
-    id: water_pulse
+      number: D6
+      mode: INPUT_PULLUP
+      inverted: true
+    filters:
+      # Small filter, to debounce the button press.
+      - delayed_on: 25ms
+      - delayed_off: 25ms
+    on_press:
+      # Only turn on the chime when it is active.
+      then:
+        if:
+          condition:
+            - switch.is_on: chime_active
+          then:
+            - switch.turn_on: relay
+    on_release:
+      # On release, turn of the chime.
+      - switch.turn_off: relay
+
+# Exposed switches.
+switch:
+  # Switch to turn on/off the chime.
+  - platform: gpio
+    id: relay
+    name: Deurbel gong
+    pin:
+      number: D2
 
   - platform: template
-    name: "Water Usage Liter"
+    name: Deurbel actief
+    id: chime_active
+    restore_mode: RESTORE_DEFAULT_ON
+    turn_on_action:
+      - globals.set:
+          id: chime
+          value: 'true'
+    turn_off_action:
+      - globals.set:
+          id: chime
+          value: 'false'
+    lambda: |-
+      return id(chime);
+
+sensor:
+  - platform: pulse_meter
+    pin:
+      number: D3
+    name: "Watergebruik huidig"
     id: water_flow_rate
     accuracy_decimals: 1
     unit_of_measurement: "l/min"
     icon: "mdi:water"
-    lambda: return (id(water_pulse).state * 10);
-    update_interval: 6s
+    total:
+      name: "Watergebruik totaal"
+      unit_of_measurement: "L"
+      device_class: water
+      state_class: total_increasing
+      accuracy_decimals: 1
+      icon: "mdi:water"
 
 button:
   - platform: template
-    name: "Alles uit"
+    name: "Deurbel: 1x kort"
+    on_press:
+      - switch.turn_on: relay
+      - delay: 300ms
+      - switch.turn_off: relay
+  - platform: template
+    name: "Licht uit"
     on_press:
       - light.turn_off: onder
       - light.turn_off: midden
       - light.turn_off: boven
   - platform: template
-    name: "Vlag"
+    name: "Licht: Vlag"
     on_press:
       - light.turn_on:
           id: neopixel
@@ -97,7 +155,7 @@ button:
 
 light:
   - platform: partition
-    name: "Boven"
+    name: "Licht Boven"
     id: boven
     segments:
       - id: neopixel
@@ -107,7 +165,7 @@ light:
 
   - platform: partition
     id: midden
-    name: "Midden"
+    name: "Licht Midden"
     segments:
       - id: neopixel
         from: 1
@@ -116,7 +174,7 @@ light:
 
   - platform: partition
     id: onder
-    name: "Onder"
+    name: "Licht Onder"
     segments:
       - id: neopixel
         from: 0
@@ -127,7 +185,8 @@ light:
     id: neopixel
     type: RGB
     variant: WS2812
-    pin: D2
+    pin: D4
+    internal: true
     num_leds: 3
     name: "NeoPixel Light"
     effects: !include { file: light-effects.yaml }
