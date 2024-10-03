@@ -149,6 +149,15 @@ binary_sensor:
 
 light:
   - platform: partition
+    id: keuken_alle
+    name: "Alle lampjes"
+    segments:
+      - id: keuken_neopixel
+        from: 0
+        to: 20
+    effects: !include { file: light-effects.yaml }
+
+  - platform: partition
     id: keuken_oven_licht
     icon: mdi:stove
     name: "Oven"
@@ -189,6 +198,7 @@ light:
     # Kookplaat
   - platform: neopixelbus
     id: keuken_kookplaat
+    name: "Kookplaat"
     type: RGB
     icon: mdi:gas-burner
     variant: WS2812

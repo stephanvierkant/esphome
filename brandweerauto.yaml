@@ -25,6 +25,8 @@ binary_sensor:
           - ON for at most 1s
         then:
           - switch.toggle: buttons
+          - switch.turn_off: zwaailichten
+          - switch.turn_off: alarmlichten
 
   - platform: gpio
     id: alarmlichten_button
