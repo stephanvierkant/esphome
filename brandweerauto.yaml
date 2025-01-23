@@ -16,17 +16,10 @@ binary_sensor:
       mode: INPUT_PULLUP
       number: D4
       inverted: true
-    on_multi_click:
-      - timing:
-          - ON for at most 1s
-          - OFF for at most 1s
-          - ON for at least 1s
-          - OFF for at most 1s
-          - ON for at most 1s
-        then:
-          - switch.toggle: buttons
-          - switch.turn_off: zwaailichten
-          - switch.turn_off: alarmlichten
+    on_press:
+      - switch.toggle: buttons
+      - switch.turn_off: zwaailichten
+      - switch.turn_off: alarmlichten
 
   - platform: gpio
     id: alarmlichten_button

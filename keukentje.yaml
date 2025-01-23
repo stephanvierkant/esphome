@@ -7,20 +7,30 @@ esphome:
 substitutions:
   devicename: keukentje
 
+datetime:
+  - id: last_activity_datetime
+    platform: template
+    type: datetime
+    optimistic: yes
+    name: "Last Activity"
+    icon: "mdi:clock"
+
 select:
   - platform: template
     name: "Licht-effect spotjes"
     optimistic: true
     options:
       - Regenboog
+      - Twinkle
       - None
     initial_option: None
     id: licht_effect_spotjes
     on_value:
       then:
-        light.control:
-          id: keuken_spotjes
-          effect: !lambda return id(licht_effect_spotjes).state;
+        - script.execute: set_time
+        - light.control:
+            id: keuken_spotjes
+            effect: !lambda return id(licht_effect_spotjes).state;
 
 binary_sensor:
   # Kookplaat
@@ -34,6 +44,7 @@ binary_sensor:
     on_click:
       - max_length: 500ms
         then:
+          - script.execute: set_time
           - if:
               condition:
                 light.is_on: keuken_spotjes
@@ -58,6 +69,7 @@ binary_sensor:
     name: Knop 2
     on_press:
       then:
+        - script.execute: set_time
         - light.turn_on: keuken_spotjes
         - if:
             condition:
@@ -82,6 +94,7 @@ binary_sensor:
     device_class: window
     on_press:
       then:
+        - script.execute: set_time
         - light.turn_on: keuken_spotjes
         - light.turn_on:
             id: keuken_magnetron_licht
@@ -91,6 +104,7 @@ binary_sensor:
             brightness: 100%
     on_release:
       then:
+        - script.execute: set_time
         - light.control:
             id: keuken_magnetron_licht
             state: on
@@ -123,6 +137,7 @@ binary_sensor:
     device_class: door
     on_press:
       then:
+        - script.execute: set_time
         - light.turn_on: keuken_spotjes
         - light.turn_on:
             id: keuken_oven_licht
@@ -132,6 +147,7 @@ binary_sensor:
             brightness: 100%
     on_release:
       then:
+        - script.execute: set_time
         - light.control:
             state: on
             id: keuken_oven_licht
@@ -147,16 +163,13 @@ binary_sensor:
             brightness: 100%
             transition_length: 10s
 
-light:
-  - platform: partition
-    id: keuken_alle
-    name: "Alle lampjes"
-    segments:
-      - id: keuken_neopixel
-        from: 0
-        to: 20
-    effects: !include { file: light-effects.yaml }
+button:
+  - platform: template
+    name: "Run Check Activity Script"
+    on_press:
+      - script.execute: check_activity
 
+light:
   - platform: partition
     id: keuken_oven_licht
     icon: mdi:stove
@@ -176,6 +189,8 @@ light:
         from: 1
         to: 19
     effects: !include { file: light-effects.yaml }
+    on_state:
+      - script.execute: set_time
 
   - platform: partition
     name: "Magnetron"
@@ -205,5 +220,33 @@ light:
     pin: D6
     num_leds: 6
     effects: !include { file: light-effects.yaml }
+
+script:
+  - id: set_time
+    mode: queued
+    then:
+      - datetime.datetime.set:
+          id: last_activity_datetime
+          datetime: !lambda |-
+            return id(homeassistant_time).now();
+  - id: check_activity
+    mode: queued
+    then:
+      - if:
+          condition:
+            - lambda: |-
+                int diff_sec = id(homeassistant_time).now().timestamp - id(last_activity_datetime).state_as_esptime().timestamp;
+                
+                return (diff_sec > 300);
+          then:
+            - light.turn_off: keuken_spotjes
+            - light.turn_off: keuken_magnetron_licht
+            - light.turn_off: keuken_oven_licht
+            - light.turn_off: keuken_kookplaat
+
+interval:
+  - interval: 1min
+    then:
+      - script.execute: check_activity
 
 <<: !include common.yaml

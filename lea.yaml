@@ -1,62 +1,88 @@
 ---
 esphome:
   name: $devicename
-  platform: ESP8266
-  board: d1_mini
 
 substitutions:
   devicename: lea
 
+esp32:
+  board: lolin_s2_mini
+  variant: ESP32S2
+
+select:
+  - platform: template
+    name: "Licht-effect bed"
+    optimistic: true
+    options:
+      - Regenboog
+      - Color Whipe
+      - Twinkle
+      - None
+    initial_option: None
+    id: lea_licht_effect_spotjes
+    on_value:
+      then:
+        - light.control:
+            id: lea_hoofdeinde
+            state: on
+            brightness: 100%
+            effect: !lambda return id(lea_licht_effect_spotjes).state;
+        - light.control:
+            id: lea_voeteneind
+            state: on
+            brightness: 100%
+            effect: !lambda return id(lea_licht_effect_spotjes).state;
+        - light.control:
+            id: lea_raam_rechts
+            state: on
+            brightness: 100%
+            effect: !lambda return id(lea_licht_effect_spotjes).state;
+        - light.control:
+            id: lea_raam_links
+            state: on
+            brightness: 100%
+            effect: !lambda return id(lea_licht_effect_spotjes).state;
+
 sensor:
   - platform: rotary_encoder
     id: lea_rotary
-    name: "Rotary Encoder"
+    name: "Rotary Encoder 1"
     pin_a:
       inverted: true
       mode:
         input: true
         pullup: true
-      number: D3
+      number: GPIO38
     pin_b:
       inverted: false
       mode:
         input: true
         pullup: true
-      number: D2
+      number: GPIO1
+
+  - platform: rotary_encoder
+    id: lea2_rotary2
+    name: "Rotary Encoder 2"
+    pin_a:
+      inverted: true
+      mode:
+        input: true
+        pullup: true
+      number: GPIO6
+    pin_b:
+      inverted: false
+      mode:
+        input: true
+        pullup: true
+      number: GPIO4
     on_clockwise:
-      - if:
-          condition:
-            - light.is_on: lea_hoofdeinde
-            - lambda: return id(lea_hoofdeinde).remote_values.get_brightness() > 0.2;
-          then:
-            - light.dim_relative:
-                id: lea_hoofdeinde
-                relative_brightness: 5%
-
-      - if:
-          condition:
-            light.is_on: lea_voeteneind
-          then:
-            - light.dim_relative:
-                id: lea_voeteneind
-                relative_brightness: 5%
-
-      - if:
-          condition:
-            light.is_on: lea_raam_rechts
-          then:
-            - light.dim_relative:
-                id: lea_raam_rechts
-                relative_brightness: 5%
-
-    on_anticlockwise:
       - if:
           condition:
             light.is_on: lea_hoofdeinde
           then:
             - light.dim_relative:
                 id: lea_hoofdeinde
-                relative_brightness: -5%
+                relative_brightness: 2%
 
       - if:
           condition:
@@ -64,7 +90,15 @@ sensor:
           then:
             - light.dim_relative:
                 id: lea_voeteneind
-                relative_brightness: -5%
+                relative_brightness: 2%
+
+      - if:
+          condition:
+            light.is_on: lea_raam_links
+          then:
+            - light.dim_relative:
+                id: lea_raam_links
+                relative_brightness: 2%
 
       - if:
           condition:
@@ -72,37 +106,58 @@ sensor:
           then:
             - light.dim_relative:
                 id: lea_raam_rechts
-                relative_brightness: -5%
+                relative_brightness: 2%
+
+    on_anticlockwise:
+      - if:
+          condition:
+            - lambda: return id(lea_hoofdeinde).remote_values.get_brightness() > 0.15;
+            - light.is_on: lea_hoofdeinde
+          then:
+            - light.dim_relative:
+                id: lea_hoofdeinde
+                relative_brightness: -2%
+
+      - if:
+          condition:
+            - lambda: return id(lea_voeteneind).remote_values.get_brightness() > 0.15;
+            - light.is_on: lea_voeteneind
+          then:
+            - light.dim_relative:
+                id: lea_voeteneind
+                relative_brightness: -2%
+
+      - if:
+          condition:
+            - lambda: return id(lea_raam_links).remote_values.get_brightness() > 0.15;
+            - light.is_on: lea_raam_links
+          then:
+            - light.dim_relative:
+                id: lea_raam_links
+                relative_brightness: -2%
+
+      - if:
+          condition:
+            - lambda: return id(lea_raam_rechts).remote_values.get_brightness() > 0.15;
+            - light.is_on: lea_raam_rechts
+          then:
+            - light.dim_relative:
+                id: lea_raam_rechts
+                relative_brightness: -2%
 
 binary_sensor:
   - platform: gpio
     id: lea_rotary_push
     pin:
-      number: D1
+      number: GPIO03
       mode: INPUT_PULLUP
       inverted: true
     name: Knop 1
-    on_click:
-      - light.control:
-          id: lea_hoofdeinde
-          state: on
-          effect: Regenboog
-          brightness: 100%
-      - light.control:
-          id: lea_voeteneind
-          state: on
-          effect: Regenboog
-          brightness: 100%
-      - light.control:
-          id: lea_raam_rechts
-          state: on
-          effect: Regenboog
-          brightness: 100%
 
   - platform: gpio
-    id: lea_bed_knopje
+    id: lea_rotary_push_2
     pin:
-      number: D7
+      number: GPIO18
       mode: INPUT_PULLUP
       inverted: true
     name: Knop 2
@@ -110,30 +165,74 @@ binary_sensor:
       then:
         - button.press: avondroutine
 
+  - platform: gpio
+    id: lea_deur
+    pin:
+      number: GPIO16
+      mode: INPUT_PULLUP
+    name: Deur Lea
+    device_class: door
+  - platform: gpio
+    id: lea_deurbel
+    pin:
+      number: GPIO14
+      mode: INPUT_PULLUP
+      inverted: true
+    name: Deurbel Lea
+    on_click:
+      - max_length: 500ms
+        then:
+          - select.next: lea_licht_effect_spotjes
+      - min_length: 500ms
+        max_length: 10000ms
+        then:
+          - light.turn_off: lea_hoofdeinde
+          - light.turn_off: lea_voeteneind
+          - light.turn_off: lea_raam_links
+          - light.turn_off: lea_raam_rechts
 light:
   - platform: partition
-    id: lea_hoofdeinde
-    name: "Hoofdeinde"
+    id: lea_raam_links
+    name: "LED: raam links"
     segments:
       - id: lea_neopixel
         from: 0
-        to: 49
+        to: 35
+    effects: !include { file: light-effects.yaml }
+  - platform: partition
+    id: lea_hoofdeinde
+    name: "LED: hoofdeinde"
+    segments:
+      - id: lea_neopixel
+        from: 36
+        to: 85
     effects: !include { file: light-effects.yaml }
   - platform: partition
     id: lea_voeteneind
-    name: "Voeteneind"
+    name: "LED: voeteneind"
     segments:
       - id: lea_neopixel
-        from: 50
-        to: 99
+        from: 86
+        to: 135
     effects: !include { file: light-effects.yaml }
   - platform: partition
     id: lea_raam_rechts
-    name: "Raam rechts"
+    name: "LED: raam rechts"
     segments:
       - id: lea_neopixel
-        from: 100
-        to: 134
+        from: 136
+        to: 170
+    effects: !include { file: light-effects.yaml }
+  - platform: partition
+    id: lea_raam
+    name: "LED: ramen"
+    segments:
+      - id: lea_neopixel
+        from: 0
+        to: 35
+      - id: lea_neopixel
+        from: 136
+        to: 170
     effects: !include { file: light-effects.yaml }
 
   - platform: neopixelbus
@@ -142,31 +241,36 @@ light:
     internal: true
     variant: WS2812
     pin:
-      number: D4
-    num_leds: 135
+      number: GPIO11
+    num_leds: 171
 
 button:
   - platform: template
     id: avondroutine
-    name: Avondroutine
+    name: "Scene: Avondroutine"
     on_press:
       - light.control:
           id: lea_hoofdeinde
           effect: none
           state: on
-          brightness: 20%
+          brightness: 40%
           red: 100%
-          green: 20%
-          blue: 20%
+          green: 0%
+          blue: 30%
+      - light.turn_off: lea_raam_links
       - light.turn_off: lea_raam_rechts
       - light.turn_off: lea_voeteneind
 
   - platform: template
-    name: Ochtendroutine
+    name: "Scene: Ochtendroutine"
     on_press:
       - light.turn_off: lea_hoofdeinde
       - light.turn_on:
           id: lea_raam_rechts
+          brightness: 50%
+          effect: Twinkle
+      - light.turn_on:
+          id: lea_raam_links
           brightness: 50%
           effect: Twinkle
       - lambda: |-

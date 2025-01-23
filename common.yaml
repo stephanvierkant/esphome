@@ -11,6 +11,7 @@ api:
 
 # Enable over-the-air updates.
 ota:
+  platform: esphome
 
 web_server:
   port: 80

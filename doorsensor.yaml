@@ -68,21 +68,45 @@ switch:
       return id(chime);
 
 sensor:
-  - platform: pulse_meter
-    pin:
-      number: D3
+  - platform: pulse_counter
+    pin: D3
     name: "Watergebruik huidig"
-    id: water_flow_rate
-    accuracy_decimals: 1
-    unit_of_measurement: "l/min"
+    unit_of_measurement: "L/min"
     icon: "mdi:water"
-    total:
-      name: "Watergebruik totaal"
-      unit_of_measurement: "L"
-      device_class: water
-      state_class: total_increasing
-      accuracy_decimals: 1
-      icon: "mdi:water"
+    update_interval: 60s
+    accuracy_decimals: 2
+    filters:
+      - multiply: 0.1 # Pas dit aan afhankelijk van het aantal pulsen per liter
+    id: water_flow_rate
+
+  - platform: total_daily_energy
+    name: "Watergebruik vandaag"
+    power_id: water_flow_rate
+    unit_of_measurement: "L"
+    icon: "mdi:water"
+    accuracy_decimals: 2
+
+  - platform: total_daily_energy
+    name: "Watergebruik maand"
+    power_id: water_flow_rate
+    unit_of_measurement: "L"
+    icon: "mdi:water"
+    accuracy_decimals: 2
+    filters:
+      - sliding_window_moving_average:
+          window_size: 30
+          send_every: 10
+          send_first_at: 1
+
+  - platform: template
+    name: "Watergebruik totaal"
+    unit_of_measurement: "L"
+    icon: "mdi:water"
+    accuracy_decimals: 1
+    state_class: total_increasing
+    device_class: water
+    lambda: |-
+      return id(water_flow_rate).state;
 
 button:
   - platform: template
