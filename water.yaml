@@ -48,4 +48,14 @@ sensor:
     icon: 'mdi:water-percent'
     unit_of_measurement: '%'
 
+  - platform: dht
+    model: DHT22
+    pin:
+      number: D7
+    temperature:
+      name: "Garage temperatuur"
+    humidity:
+      name: "Garage luchtvochtigheid"
+    update_interval: 60s
+
 <<: !include common.yaml

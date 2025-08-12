@@ -1,0 +1,320 @@
+esphome:
+  name: ${devicename}
+  on_boot:
+    priority: 200.0
+    then:
+      - script.execute: fetch_beers
+      - component.update: eink_display
+      - wait_until:
+          condition:
+            lambda: 'return id(data_updated) == true;'
+          timeout: 15s
+      - delay: 5s
+      - logger.log: "Initial sensor data received: Refreshing display..."
+      - lambda: 'id(initial_data_received) = true;'
+      - script.execute: update_screen
+
+esp32:
+  board: esp32dev
+  framework:
+    type: esp-idf
+
+substitutions:
+  devicename: eink
+  api_url: "https://bier.vierkant.org/api/biers.json?order%5Bpercentage%5D=asc&aantal[gt]=0"
+
+spi:
+  clk_pin: GPIO13
+  mosi_pin: GPIO14
+
+time:
+  - platform: homeassistant
+    id: homeassistant_time
+    timezone: Europe/Amsterdam
+    on_time:
+      - seconds: 0
+        minutes: /1
+        then:
+          - if:
+              condition:
+                lambda: 'return id(data_updated) == true;'
+              then:
+                - logger.log: "Data updated: Refreshing display..."
+                - script.execute: update_screen
+              else:
+                - logger.log: "No sensors updated - skipping display refresh."
+
+button:
+  - platform: template
+    name: "Weatherman - Refresh Screen"
+    entity_category: config
+    on_press:
+      - script.execute: fetch_beers
+      - wait_until:
+          condition:
+            lambda: 'return id(data_updated) == true;'
+          timeout: 15s
+      - script.execute: update_screen
+
+globals:
+  - id: data_updated
+    type: bool
+    restore_value: no
+    initial_value: 'false'
+  - id: initial_data_received
+    type: bool
+    restore_value: no
+    initial_value: 'false'
+  - id: recorded_display_refresh
+    type: int
+    restore_value: yes
+    initial_value: '0'
+  - id: beer_count
+    type: int
+    initial_value: '0'
+  - id: beer_name
+    type: std::array<std::string, 30>
+  - id: beer_abv
+    type: std::array<float, 30>
+  - id: beer_vol
+    type: std::array<int, 30>
+  - id: beer_stock
+    type: std::array<int, 30>
+  # ETag/Hash cache
+  - id: last_etag
+    type: std::string
+  - id: last_hash
+    type: uint32_t
+    initial_value: '0'
+  # Temporary storage for streamed HTTP response (ESP-IDF chunked)
+  - id: http_status
+    type: int
+    initial_value: '0'
+  - id: resp_etag
+    type: std::string
+  - id: http_body
+    type: std::string
+
+sensor:
+  - platform: template
+    name: "Fotolijstje - Display Last Update"
+    device_class: timestamp
+    entity_category: "diagnostic"
+    id: display_last_update
+
+  - platform: template
+    name: "Fotolijstje - Recorded Display Refresh"
+    accuracy_decimals: 0
+    unit_of_measurement: "Refreshes"
+    state_class: "total_increasing"
+    entity_category: "diagnostic"
+    lambda: 'return id(recorded_display_refresh);'
+interval:
+  - interval: 10min
+    then:
+      - script.execute: fetch_beers
+
+http_request:
+  id: httpc
+  useragent: esphome-bierkaart
+  timeout: 10s
+  verify_ssl: true  # Keep false for first test on ESP-IDF; then switch to true + CA once stable
+  # To enable strict TLS verification later, set verify_ssl: true and provide the correct CA chain.
+
+script:
+  - id: fetch_beers
+    then:
+      - lambda: 'id(data_updated) = false;'
+      - lambda: |-
+          ESP_LOGI("bier", "Fetching: %s", "${api_url}");
+          id(http_status) = 0;
+          id(resp_etag).clear();
+          id(http_body).clear();
+      - http_request.get:
+          url: "${api_url}"
+          request_headers:
+            Accept: application/json
+            Accept-Encoding: identity
+            Connection: close
+            If-None-Match: !lambda |-
+              // Header value must be const char*; convert from std::string
+              return id(last_etag).c_str();
+          collect_headers:
+            - Content-Length
+            - Transfer-Encoding
+            - ETag
+          on_error:
+            then:
+              - logger.log: "HTTP request failed, check network connection or API URL."
+          capture_response: true
+          max_response_buffer_size: 16384
+          on_response:
+            then:
+              - lambda: |-
+                  // Headers + full body are available here with capture_response:true (ESP-IDF)
+                  id(http_status) = response->status_code;
+                  id(resp_etag) = response->get_response_header("ETag");
+                  ESP_LOGI("bier", "Status=%d, ETag=%s", id(http_status), id(resp_etag).c_str());
+                  ESP_LOGD("bier", "TE=%s, CL=%s",
+                           response->get_response_header("Transfer-Encoding").c_str(),
+                           response->get_response_header("Content-Length").c_str());
+                  id(http_body) = body;
+                  ESP_LOGD("bier", "Body head: %.200s", id(http_body).c_str());
+
+      - lambda: |-
+          // Parse after full request finished (body collected)
+          if (id(http_status) == 304) {
+            ESP_LOGI("bier", "Not modified (304) – skipping refresh");
+            return;
+          }
+          if (id(http_status) != 200) {
+            ESP_LOGW("bier", "HTTP status after request: %d", id(http_status));
+            return;
+          }
+          if (id(http_body).empty()) {
+            ESP_LOGE("bier", "Empty body after request (chunked)");
+            return;
+          }
+
+          // ETag/hash check
+          uint32_t h = 2166136261u; // FNV-1a
+          for (size_t i = 0; i < id(http_body).size(); i++) { h ^= (uint8_t) id(http_body)[i]; h *= 16777619u; }
+          bool unchanged = (!id(resp_etag).empty() && id(resp_etag) == id(last_etag)) || (h == id(last_hash));
+          if (unchanged) {
+            ESP_LOGI("bier", "Unchanged body (etag/hash) – skipping parse/refresh");
+            return;
+          }
+
+          JsonDocument doc;
+          auto err = deserializeJson(doc, id(http_body));
+          if (err) {
+            ESP_LOGE("bier", "JSON parse error (post-body): %s", err.c_str());
+            return;
+          }
+
+          // Reset buffers
+          for (int i = 0; i < 30; i++) {
+            id(beer_name)[i].clear();
+            id(beer_abv)[i]   = 0;
+            id(beer_vol)[i]   = 0;
+            id(beer_stock)[i] = 0;
+          }
+
+          JsonArray arr = doc.as<JsonArray>();
+          if (arr.isNull()) {
+            ESP_LOGW("bier", "JSON has is invalid");
+          } else {
+            ESP_LOGI("bier", "member size (arr.size) = %u", arr.size());
+          }
+
+          int idx = 0;
+          for (JsonVariant v : arr) {
+            if (idx >= 30) break;
+            std::string nm = v["omschrijving"].isNull() ? "" : v["omschrijving"].as<std::string>();
+            id(beer_name)[idx] = nm;
+
+            float abv = 0.0f;
+            if (!v["percentage"].isNull()) {
+              if (v["percentage"].is<const char*>()) abv = atof(v["percentage"].as<const char*>());
+              else abv = v["percentage"].as<float>();
+            }
+            int vol   = v["inhoud"].isNull() ? 0 : (v["inhoud"].is<const char*>() ? atoi(v["inhoud"].as<const char*>()) : v["inhoud"].as<int>());
+            int stock = v["aantal"].isNull()  ? 0 : (v["aantal"].is<const char*>()  ? atoi(v["aantal"].as<const char*>())  : v["aantal"].as<int>());
+
+            id(beer_abv)[idx]  = abv;
+            id(beer_vol)[idx]   = vol;
+            id(beer_stock)[idx] = stock;
+            idx++;
+          }
+
+          id(beer_count) = idx;
+          ESP_LOGI("bier", "Parsed %d beers", idx);
+          if (idx > 0) {
+            ESP_LOGI("bier", "First: %s | %.2f%% | %dcl | stock %d",
+                     id(beer_name)[0].c_str(), id(beer_abv)[0], id(beer_vol)[0], id(beer_stock)[0]);
+          }
+          id(last_etag) = id(resp_etag);
+          id(last_hash) = h;
+          id(data_updated) = true;
+          id(update_screen).execute();
+
+  - id: update_screen
+    then:
+      - lambda: 'id(data_updated) = false;'
+      - component.update: eink_display
+      - lambda: 'id(recorded_display_refresh) += 1;'
+      - lambda: 'id(display_last_update).publish_state(id(homeassistant_time).now().timestamp);'
+
+font:
+  - file: 'fonts/Roboto/Roboto-Regular.ttf'
+    id: header_1
+    size: 50
+
+  - file: 'fonts/Roboto/Roboto-Regular.ttf'
+    id: header_small
+    size: 36
+
+  - file: 'fonts/Roboto/Roboto-Regular.ttf'
+    id: paragraph
+    size: 20
+
+  - file: 'fonts/Roboto/Roboto-Regular.ttf'
+    id: beer_font
+    size: 26
+
+  - file: 'fonts/Roboto/Roboto-Regular.ttf'
+    id: info_small
+    size: 16
+
+display:
+  - platform: waveshare_epaper
+    id: eink_display
+    cs_pin: GPIO15
+    dc_pin: GPIO27
+    busy_pin:
+      number: GPIO25
+      inverted: true
+    reset_pin: GPIO26
+    rotation: 90
+    update_interval: never
+    model: 7.50in-bV2
+    lambda: |-
+      bool has_data = id(beer_count) > 0;
+      if (!has_data) {
+        it.printf(240, 20, id(header_1), TextAlign::TOP_CENTER, "Bezig met laden...");
+        it.printf(240, 80, id(paragraph), TextAlign::TOP_CENTER, "beer_count=%d", id(beer_count));
+      } else {
+        it.printf(240, 8, id(header_small), TextAlign::TOP_CENTER, "Bierkaart");
+        // dun lijntje onder titel
+        it.line(20, 56, 460, 56);
+        int y = 72;  // kleinere marge onder titel
+        const int max_rows = 10;
+        for (int i = 0; i < id(beer_count) && i < max_rows; i++) {
+          // Naam links, groter font (truncate als hij te lang is)
+          std::string nm = id(beer_name)[i];
+          if (nm.size() > 36) nm = nm.substr(0, 35) + "...";
+          it.printf(20, y, id(beer_font), TextAlign::TOP_LEFT, "%s", nm.c_str());
+
+          // Rechts: percentage + volume (kleiner font), geen voorraad hier
+          char right2[48];
+          snprintf(right2, sizeof(right2), "%.1f%%   %dcl", id(beer_abv)[i], id(beer_vol)[i]);
+          it.printf(460, y + 30, id(info_small), TextAlign::TOP_RIGHT, "%s", right2);
+
+          // Lage voorraad: extra regel onder de naam
+          if (id(beer_stock)[i] <= 3) {
+            it.printf(20, y + 30, id(info_small), TextAlign::TOP_LEFT, "nog maar %d op voorraad!", id(beer_stock)[i]);
+          } else {
+            it.printf(20, y + 30, id(info_small), TextAlign::TOP_LEFT, "%d stuks", id(beer_stock)[i]);
+          }
+
+          // Dynamische itemhoogte: meer marge als er een voorraadregel is
+          int item_height = (id(beer_stock)[i] <= 3) ? 56 : 44;
+          y += item_height;
+        }
+      }
+      char str[17];
+      time_t currTime = id(homeassistant_time).now().timestamp;
+      strftime(str, sizeof(str), "%H:%M", localtime(&currTime));
+      it.printf(240, 760, id(paragraph), TextAlign::TOP_CENTER, "Laatst ververst op %s", str);
+
+<<: !include common.yaml

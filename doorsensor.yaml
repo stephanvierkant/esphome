@@ -16,15 +16,21 @@ globals:
 binary_sensor:
   - platform: gpio
     pin:
-      number: D5
+      number: D1
       mode: INPUT_PULLUP
     name: Voordeur
+    device_class: window
+  - platform: gpio
+    pin:
+      number: D7
+      mode: INPUT_PULLUP
+    name: Woonkamerdeur
     device_class: window
   - platform: gpio
     id: doorbell_button
     name: Deurbel knop
     pin:
-      number: D6
+      number: D2
       mode: INPUT_PULLUP
       inverted: true
     filters:
@@ -50,7 +56,7 @@ switch:
     id: relay
     name: Deurbel gong
     pin:
-      number: D2
+      number: D8
 
   - platform: template
     name: Deurbel actief
@@ -69,44 +75,27 @@ switch:
 
 sensor:
   - platform: pulse_counter
-    pin: D3
+    pin:
+      number: D6
+      mode:
+        input: true
+        #pullup: true
+      inverted: true
     name: "Watergebruik huidig"
-    unit_of_measurement: "L/min"
+    unit_of_measurement: "L/10s"
     icon: "mdi:water"
-    update_interval: 60s
+    update_interval: 10s
     accuracy_decimals: 2
-    filters:
-      - multiply: 0.1 # Pas dit aan afhankelijk van het aantal pulsen per liter
     id: water_flow_rate
 
-  - platform: total_daily_energy
-    name: "Watergebruik vandaag"
-    power_id: water_flow_rate
-    unit_of_measurement: "L"
-    icon: "mdi:water"
-    accuracy_decimals: 2
-
-  - platform: total_daily_energy
-    name: "Watergebruik maand"
-    power_id: water_flow_rate
-    unit_of_measurement: "L"
-    icon: "mdi:water"
-    accuracy_decimals: 2
-    filters:
-      - sliding_window_moving_average:
-          window_size: 30
-          send_every: 10
-          send_first_at: 1
-
-  - platform: template
+  - platform: integration
     name: "Watergebruik totaal"
+    sensor: water_flow_rate
+    time_unit: min
     unit_of_measurement: "L"
-    icon: "mdi:water"
-    accuracy_decimals: 1
-    state_class: total_increasing
+    accuracy_decimals: 2
     device_class: water
-    lambda: |-
-      return id(water_flow_rate).state;
+    state_class: total_increasing
 
 button:
   - platform: template

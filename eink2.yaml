@@ -1,0 +1,44 @@
+---
+esphome:
+  name: $devicename
+
+esp8266:
+  board: d1_mini
+
+font:
+  - file: 'fonts/Roboto/Roboto-Black.ttf'
+    id: font1
+    size: 32
+
+substitutions:
+  devicename: eink2
+
+spi:
+  mosi_pin: GPIO13  # aka SDA
+  clk_pin: GPIO15  #aka SCL
+
+#| Signaal | D-pin | GPIO         |
+#| ------- | ----- | ------------ |
+#| SCL     | D8    | 15           |
+#| SDA     | D7    | 13           |
+#| RES     | D4    | 2            |
+#| DC      | D6    | 12           |
+#| CS      | D5    | 14           |
+#| Busy    | D1    | 5    ← beter |
+time:
+  - platform: sntp
+    id: sntp_time
+
+display:
+  - platform: waveshare_epaper
+    model: 2.90inv2-r2
+    cs_pin: GPIO14
+    dc_pin: GPIO12
+    reset_pin: GPIO02
+    busy_pin: GPIO05
+    rotation: 90
+#    full_update_every:
+    update_interval: 30s
+    lambda: |-
+      it.print(0, 0, id(font1), "Stephan <3 Anouk!");
+<<: !include common.yaml

@@ -64,6 +64,16 @@ binary_sensor:
       }
       return false;
 
+  - platform: template
+    id: motion_garagedeur
+    device_class: motion
+    name: "Beweging garagedeur"
+    lambda: |-
+      if (id(garagedeur_volledig_dicht).state && id(garagedeur_volledig_open).state) {
+        return true;
+      }
+      return false;
+
 cover:
   - platform: template
     name: "Garagedeur"
