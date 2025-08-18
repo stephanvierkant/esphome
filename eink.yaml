@@ -21,7 +21,7 @@ esp32:
 
 substitutions:
   devicename: eink
-  api_url: "https://bier.vierkant.org/api/biers.json?order%5Bpercentage%5D=asc&aantal[gt]=0"
+  api_url: "https://bier.vierkant.org/api/lijstje?aantal[gt]=0"
 
 spi:
   clk_pin: GPIO13
@@ -80,6 +80,8 @@ globals:
     type: std::array<int, 30>
   - id: beer_stock
     type: std::array<int, 30>
+  - id: beer_pack
+    type: std::array<std::string, 30>
   # ETag/Hash cache
   - id: last_etag
     type: std::string
@@ -213,6 +215,10 @@ script:
             std::string nm = v["omschrijving"].isNull() ? "" : v["omschrijving"].as<std::string>();
             id(beer_name)[idx] = nm;
 
+            // Verpakking (bijv. "fles, 33 cl")
+            std::string pack = v["verpakking"].isNull() ? "" : v["verpakking"].as<std::string>();
+            id(beer_pack)[idx] = pack;
+
             float abv = 0.0f;
             if (!v["percentage"].isNull()) {
               if (v["percentage"].is<const char*>()) abv = atof(v["percentage"].as<const char*>());
@@ -230,8 +236,8 @@ script:
           id(beer_count) = idx;
           ESP_LOGI("bier", "Parsed %d beers", idx);
           if (idx > 0) {
-            ESP_LOGI("bier", "First: %s | %.2f%% | %dcl | stock %d",
-                     id(beer_name)[0].c_str(), id(beer_abv)[0], id(beer_vol)[0], id(beer_stock)[0]);
+            ESP_LOGI("bier", "First: %s | %.2f%% | %s | stock %d",
+                     id(beer_name)[0].c_str(), id(beer_abv)[0], id(beer_pack)[0].c_str(), id(beer_stock)[0]);
           }
           id(last_etag) = id(resp_etag);
           id(last_hash) = h;
@@ -288,33 +294,31 @@ display:
         // dun lijntje onder titel
         it.line(20, 56, 460, 56);
         int y = 72;  // kleinere marge onder titel
-        const int max_rows = 10;
+        const int max_rows = 14;
         for (int i = 0; i < id(beer_count) && i < max_rows; i++) {
           // Naam links, groter font (truncate als hij te lang is)
           std::string nm = id(beer_name)[i];
           if (nm.size() > 36) nm = nm.substr(0, 35) + "...";
           it.printf(20, y, id(beer_font), TextAlign::TOP_LEFT, "%s", nm.c_str());
 
-          // Rechts: percentage + volume (kleiner font), geen voorraad hier
+          // Rechts: alleen percentage
           char right2[48];
-          snprintf(right2, sizeof(right2), "%.1f%%   %dcl", id(beer_abv)[i], id(beer_vol)[i]);
-          it.printf(460, y + 30, id(info_small), TextAlign::TOP_RIGHT, "%s", right2);
+          snprintf(right2, sizeof(right2), "%.1f%%", id(beer_abv)[i]);
+          it.printf(440, y + 30, id(info_small), TextAlign::TOP_RIGHT, "%s", right2);
 
-          // Lage voorraad: extra regel onder de naam
-          if (id(beer_stock)[i] <= 3) {
-            it.printf(20, y + 30, id(info_small), TextAlign::TOP_LEFT, "nog maar %d op voorraad!", id(beer_stock)[i]);
-          } else {
-            it.printf(20, y + 30, id(info_small), TextAlign::TOP_LEFT, "%d stuks", id(beer_stock)[i]);
-          }
+          // Links: één regel met "verpakking, voorraad"
+          char left2[120];
+          snprintf(left2, sizeof(left2), "%s, %d stuks", id(beer_pack)[i].c_str(), id(beer_stock)[i]);
+      
+          it.printf(20, y + 30, id(info_small), TextAlign::TOP_LEFT, "%s", left2);
 
-          // Dynamische itemhoogte: meer marge als er een voorraadregel is
-          int item_height = (id(beer_stock)[i] <= 3) ? 56 : 44;
-          y += item_height;
+          // Vaste itemhoogte, want alles past op twee regels
+          y += 52;
         }
       }
       char str[17];
       time_t currTime = id(homeassistant_time).now().timestamp;
       strftime(str, sizeof(str), "%H:%M", localtime(&currTime));
-      it.printf(240, 760, id(paragraph), TextAlign::TOP_CENTER, "Laatst ververst op %s", str);
+      it.printf(400, 8, id(paragraph), TextAlign::TOP_LEFT, str);
 
 <<: !include common.yaml
