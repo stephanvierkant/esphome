@@ -4,10 +4,12 @@ on:
   pull_request:
     paths:
       - "**.yaml"
+      - "fonts/**"
       - ".github/workflows/esphome-config.yml"
   push:
     paths:
       - "**.yaml"
+      - "fonts/**"
       - ".github/workflows/esphome-config.yml"
   schedule:
     - cron: "0 8 * * 1"
