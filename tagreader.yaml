@@ -221,4 +221,5 @@ pn532_i2c:
     - homeassistant.event:
         event: esphome.tag_removed
 
-<<: !include common.yaml
+packages:
+  device_base: !include common/device_base.yaml

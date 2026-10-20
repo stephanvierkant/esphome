@@ -2,21 +2,8 @@
 esphome:
   name: $devicename
 
-esp32:
-  board: esp32dev
-  framework:
-    type: esp-idf
-
 substitutions:
   devicename: lantaarn
-
-bluetooth_proxy:
-  active: true
-
-esp32_ble_tracker:
-  scan_parameters:
-    interval: 320ms
-    window: 30ms
 
 output:
   - platform: ledc
@@ -30,4 +17,6 @@ light:
     icon: mdi:outdoor-lamp
 
 packages:
-  - !include common.yaml
+  device_base: !include common/device_base.yaml
+  esp32: !include common/esp32.yaml
+  bluetooth_proxy: !include common/bluetooth_proxy.yaml

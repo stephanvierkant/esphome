@@ -58,4 +58,5 @@ sensor:
       name: "Garage luchtvochtigheid"
     update_interval: 60s
 
-<<: !include common.yaml
+packages:
+  device_base: !include common/device_base.yaml
