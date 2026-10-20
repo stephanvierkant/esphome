@@ -2,21 +2,8 @@
 esphome:
   name: $devicename
 
-esp32:
-  board: esp32dev
-  framework:
-    type: esp-idf
-
 substitutions:
   devicename: garage
-
-bluetooth_proxy:
-  active: true
-
-esp32_ble_tracker:
-  scan_parameters:
-    interval: 320ms
-    window: 30ms
 
 i2c:
   sda: GPIO22
@@ -149,4 +136,6 @@ cover:
           }
 
 packages:
-  - !include common.yaml
+  common: !include common.yaml
+  esp32: !include packages/esp32.yaml
+  bluetooth_proxy: !include packages/bluetooth_proxy.yaml

@@ -2,21 +2,8 @@
 esphome:
   name: $devicename
 
-esp32:
-  board: esp32dev
-  framework:
-    type: esp-idf
-
 substitutions:
   devicename: slaapkamer
-
-bluetooth_proxy:
-  active: true
-
-esp32_ble_tracker:
-  scan_parameters:
-    interval: 320ms
-    window: 30ms
 
 light:
   - platform: partition
@@ -53,4 +40,6 @@ light:
     num_leds: 58
 
 packages:
-  - !include common.yaml
+  common: !include common.yaml
+  esp32: !include packages/esp32.yaml
+  bluetooth_proxy: !include packages/bluetooth_proxy.yaml
