@@ -1,0 +1,57 @@
+name: ESPHome config
+
+on:
+  pull_request:
+    paths:
+      - "**.yaml"
+      - ".github/workflows/esphome-config.yml"
+  push:
+    paths:
+      - "**.yaml"
+      - ".github/workflows/esphome-config.yml"
+  schedule:
+    - cron: "0 8 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Validate ESPHome configurations
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Validate configurations
+        run: |
+          set -euo pipefail
+
+          printf 'wifi_password: ci-placeholder\n' > secrets.yaml
+          trap 'rm -f secrets.yaml' EXIT
+
+          mapfile -t configs < <(grep -l '^esphome:' -- ./*.yaml | sort)
+          if [[ ${#configs[@]} -eq 0 ]]; then
+            echo "No ESPHome configurations found"
+            exit 1
+          fi
+
+          failures=0
+          for config in "${configs[@]}"; do
+            echo "::group::${config}"
+            if ! docker run --rm \
+              --volume "$GITHUB_WORKSPACE:/config" \
+              --workdir /config \
+              ghcr.io/esphome/esphome:stable config "$config"; then
+              failures=$((failures + 1))
+            fi
+            echo "::endgroup::"
+          done
+
+          exit "$failures"

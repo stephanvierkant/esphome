@@ -6,7 +6,7 @@ esp8266:
   board: d1_mini
 
 font:
-  - file: 'fonts/Roboto/Roboto-Black.ttf'
+  - file: 'fonts/Roboto/Roboto-Regular.ttf'
     id: font1
     size: 32
 

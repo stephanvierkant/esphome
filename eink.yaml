@@ -29,7 +29,6 @@ spi:
 
 time:
   - platform: homeassistant
-    id: homeassistant_time
     timezone: Europe/Amsterdam
     on_time:
       - seconds: 0
