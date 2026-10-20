@@ -1,7 +1,8 @@
 ---
 esphome:
   name: $devicename
-  platform: ESP8266
+
+esp8266:
   board: d1_mini
 
 substitutions:
@@ -30,7 +31,7 @@ select:
         - script.execute: set_time
         - light.control:
             id: keuken_spotjes
-            effect: !lambda return id(licht_effect_spotjes).state;
+            effect: !lambda return x;
 
 binary_sensor:
   # Kookplaat

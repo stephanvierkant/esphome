@@ -15,7 +15,7 @@ select:
     optimistic: true
     options:
       - Regenboog
-      - Color Whipe
+      - Color Wipe
       - Twinkle
       - None
     initial_option: None
@@ -26,22 +26,22 @@ select:
             id: lea_hoofdeinde
             state: on
             brightness: 100%
-            effect: !lambda return id(lea_licht_effect_spotjes).state;
+            effect: !lambda return x;
         - light.control:
             id: lea_voeteneind
             state: on
             brightness: 100%
-            effect: !lambda return id(lea_licht_effect_spotjes).state;
+            effect: !lambda return x;
         - light.control:
             id: lea_raam_rechts
             state: on
             brightness: 100%
-            effect: !lambda return id(lea_licht_effect_spotjes).state;
+            effect: !lambda return x;
         - light.control:
             id: lea_raam_links
             state: on
             brightness: 100%
-            effect: !lambda return id(lea_licht_effect_spotjes).state;
+            effect: !lambda return x;
 
 sensor:
   - platform: rotary_encoder
@@ -235,14 +235,14 @@ light:
         to: 170
     effects: !include { file: light-effects.yaml }
 
-  - platform: neopixelbus
+  - platform: esp32_rmt_led_strip
     id: lea_neopixel
-    type: GRB
     internal: true
-    variant: WS2812
-    pin:
-      number: GPIO11
+    chipset: WS2812
+    rgb_order: GRB
+    pin: GPIO11
     num_leds: 171
+    rmt_symbols: 64
 
 button:
   - platform: template

@@ -1,18 +1,54 @@
 ---
 esphome:
   name: $devicename
-  platform: ESP8266
-  board: d1_mini
+
+esp32:
+  board: esp32dev
+  framework:
+    type: esp-idf
 
 substitutions:
   devicename: garage
+
+bluetooth_proxy:
+  active: true
+
+esp32_ble_tracker:
+  scan_parameters:
+    interval: 320ms
+    window: 30ms
+
+i2c:
+  sda: GPIO22
+  scl: GPIO21
+  scan: true
+
+mcp23017:
+  - id: mcp23017_hub
+    address: 0x20  # pas aan als A0-A2 op de MCP23017 niet alle drie naar GND gaan
+
+logger:
+  level: DEBUG
+
+debug:
+  update_interval: 5s
+
+sensor:
+  - platform: wifi_signal
+    name: "WiFi Signaalsterkte"
+    update_interval: 30s
+  - platform: uptime
+    name: "Uptime"
 
 switch:
   - platform: gpio
     id: relay
     name: Garagedeur openen
     pin:
-      number: D1
+      mcp23xxx: mcp23017_hub
+      number: 0  # PA0
+      inverted: true
+    restore_mode: ALWAYS_OFF
     on_turn_on:
       - delay: 250ms
       - switch.turn_off: relay
@@ -20,22 +56,27 @@ switch:
 binary_sensor:
   - platform: gpio
     pin:
-      number: D2
+      mcp23xxx: mcp23017_hub
+      number: 2  # PA2
       mode: INPUT_PULLUP
     name: Garagedeur volledig dicht
     id: garagedeur_volledig_dicht
     device_class: door
     internal: true
+
   - platform: gpio
     id: garage_tussendeur
     pin:
-      number: D3
+      mcp23xxx: mcp23017_hub
+      number: 1  # PA1
       mode: INPUT_PULLUP
     name: Tussendeur
     device_class: door
+
   - platform: gpio
     pin:
-      number: D6
+      mcp23xxx: mcp23017_hub
+      number: 3  # PA3
       mode: INPUT_PULLUP
     name: Garagedeur volledig geopend
     id: garagedeur_volledig_open
@@ -45,7 +86,8 @@ binary_sensor:
   - platform: gpio
     id: garage_motion
     pin:
-      number: D5
+      mcp23xxx: mcp23017_hub
+      number: 4  # PA4
       mode: INPUT_PULLUP
     filters:
       - delayed_off: 10s
@@ -106,4 +148,5 @@ cover:
             id(relay).turn_on();
           }
 
-<<: !include common.yaml
+packages:
+  - !include common.yaml

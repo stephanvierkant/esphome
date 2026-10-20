@@ -1,0 +1,56 @@
+---
+esphome:
+  name: $devicename
+
+esp32:
+  board: esp32dev
+  framework:
+    type: esp-idf
+
+substitutions:
+  devicename: slaapkamer
+
+bluetooth_proxy:
+  active: true
+
+esp32_ble_tracker:
+  scan_parameters:
+    interval: 320ms
+    window: 30ms
+
+light:
+  - platform: partition
+    id: slaapkamer_bed
+    name: "Bed Stephan"
+    segments:
+      - id: slaapkamer_leds
+        from: 0
+        to: 57
+    effects: !include { file: light-effects.yaml }
+  - platform: partition
+    id: slaapkamer_bed_1
+    name: "Bed licht 1"
+    segments:
+      - id: slaapkamer_leds
+        from: 0
+        to: 28
+    effects: !include { file: light-effects.yaml }
+  - platform: partition
+    id: slaapkamer_bed_2
+    name: "Bed licht 2"
+    segments:
+      - id: slaapkamer_leds
+        from: 29
+        to: 57
+    effects: !include { file: light-effects.yaml }
+
+  - platform: esp32_rmt_led_strip
+    id: slaapkamer_leds
+    rgb_order: GRB
+    internal: true
+    chipset: WS2812
+    pin: GPIO13
+    num_leds: 58
+
+packages:
+  - !include common.yaml

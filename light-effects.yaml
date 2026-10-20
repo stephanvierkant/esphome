@@ -46,7 +46,7 @@
 - addressable_fireworks:
     name: Vuurwerk
 - addressable_color_wipe:
-    name: Color Whipe
+    name: Color Wipe
 - addressable_rainbow:
     name: Regenboog
 - addressable_random_twinkle:

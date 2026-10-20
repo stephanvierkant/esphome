@@ -1,10 +1,6 @@
-ESP8266:
-    
-    docker run --rm -v "${PWD}":/config --device=/dev/ttyUSB0 -it ghcr.io/esphome/esphome run doorsensor.yaml
+Build en push:
 
-ESP32:
-
-    docker run --rm -v "${PWD}":/config --device=/dev/ttyACM0 -it ghcr.io/esphome/esphome run lea.yaml
+    ./run.sh lea.yaml
 
 Update ESPHOME:
 

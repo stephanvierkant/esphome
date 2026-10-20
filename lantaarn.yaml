@@ -1,0 +1,33 @@
+---
+esphome:
+  name: $devicename
+
+esp32:
+  board: esp32dev
+  framework:
+    type: esp-idf
+
+substitutions:
+  devicename: lantaarn
+
+bluetooth_proxy:
+  active: true
+
+esp32_ble_tracker:
+  scan_parameters:
+    interval: 320ms
+    window: 30ms
+
+output:
+  - platform: ledc
+    id: lantaarn_pwm
+    pin: GPIO27
+
+light:
+  - platform: monochromatic
+    name: Lantaarn
+    output: lantaarn_pwm
+    icon: mdi:outdoor-lamp
+
+packages:
+  - !include common.yaml

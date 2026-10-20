@@ -24,8 +24,10 @@ time:
 
 text_sensor:
   - platform: version
-    name: $devicename ESPHome Version
+    name: ESPHome Version
+    hide_timestamp: true
+    hide_hash: true
 
 switch:
   - platform: restart
-    name: $devicename Restart
+    name: Restart
