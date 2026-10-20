@@ -205,4 +205,5 @@ light:
     name: "NeoPixel Light"
     effects: !include { file: light-effects.yaml }
 
-<<: !include common.yaml
+packages:
+  device_base: !include common/device_base.yaml

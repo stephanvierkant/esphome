@@ -90,4 +90,5 @@ switch:
     pin:
       number: D1
 
-<<: !include common.yaml
+packages:
+  device_base: !include common/device_base.yaml

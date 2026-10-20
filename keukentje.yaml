@@ -250,4 +250,5 @@ interval:
     then:
       - script.execute: check_activity
 
-<<: !include common.yaml
+packages:
+  device_base: !include common/device_base.yaml

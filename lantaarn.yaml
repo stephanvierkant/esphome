@@ -17,6 +17,6 @@ light:
     icon: mdi:outdoor-lamp
 
 packages:
-  common: !include common.yaml
-  esp32: !include packages/esp32.yaml
-  bluetooth_proxy: !include packages/bluetooth_proxy.yaml
+  device_base: !include common/device_base.yaml
+  esp32: !include common/esp32.yaml
+  bluetooth_proxy: !include common/bluetooth_proxy.yaml
