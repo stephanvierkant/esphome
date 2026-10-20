@@ -11,19 +11,6 @@ mcp23017:
   - id: mcp23017_hub
     address: 0x20  # pas aan als A0-A2 op de MCP23017 niet alle drie naar GND gaan
 
-logger:
-  level: DEBUG
-
-debug:
-  update_interval: 5s
-
-sensor:
-  - platform: wifi_signal
-    name: "WiFi Signaalsterkte"
-    update_interval: 30s
-  - platform: uptime
-    name: "Uptime"
-
 switch:
   - platform: gpio
     id: relay
