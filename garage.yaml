@@ -1,7 +1,4 @@
 ---
-esphome:
-  name: $devicename
-
 substitutions:
   devicename: garage
 
