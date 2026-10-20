@@ -33,10 +33,17 @@ jobs:
         run: |
           set -euo pipefail
 
-          printf 'wifi_password: ci-placeholder\n' > secrets.yaml
-          trap 'rm -f secrets.yaml' EXIT
+          secret_file="$(mktemp "$RUNNER_TEMP/esphome-secrets.XXXXXX")"
+          printf 'wifi_password: ci-placeholder\n' > "$secret_file"
+          trap 'rm -f "$secret_file"' EXIT
 
-          mapfile -t configs < <(grep -l '^esphome:' -- ./*.yaml | sort)
+          mapfile -t configs < <(
+            find . -maxdepth 1 -type f -name '*.yaml' \
+              ! -name 'common.yaml' \
+              ! -name 'docker-compose.yaml' \
+              ! -name 'light-effects.yaml' \
+              | sort
+          )
           if [[ ${#configs[@]} -eq 0 ]]; then
             echo "No ESPHome configurations found"
             exit 1
@@ -47,6 +54,7 @@ jobs:
             echo "::group::${config}"
             if ! docker run --rm \
               --volume "$GITHUB_WORKSPACE:/config" \
+              --volume "$secret_file:/config/secrets.yaml:ro" \
               --workdir /config \
               ghcr.io/esphome/esphome:stable config "$config"; then
               failures=$((failures + 1))

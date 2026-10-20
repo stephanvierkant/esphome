@@ -1,2 +1,0 @@
-packages:
-  device_base: !include common/device_base.yaml

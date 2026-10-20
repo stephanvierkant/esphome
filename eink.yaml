@@ -1,3 +1,6 @@
+packages:
+  device_base: !include common/device_base.yaml
+
 esphome:
   name: ${devicename}
   on_boot:
@@ -319,5 +322,3 @@ display:
       time_t currTime = id(homeassistant_time).now().timestamp;
       strftime(str, sizeof(str), "%H:%M", localtime(&currTime));
       it.printf(400, 8, id(paragraph), TextAlign::TOP_LEFT, str);
-
-<<: !include common.yaml

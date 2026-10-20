@@ -1,7 +1,4 @@
 ---
-esphome:
-  name: $devicename
-
 substitutions:
   devicename: slaapkamer
 
@@ -33,7 +30,7 @@ light:
 
   - platform: esp32_rmt_led_strip
     id: slaapkamer_leds
-    rgb_order: GRB
+    channel_colors: GRB
     internal: true
     chipset: WS2812
     pin: GPIO13

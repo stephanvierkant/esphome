@@ -1,7 +1,4 @@
 ---
-esphome:
-  name: $devicename
-
 substitutions:
   devicename: lea
 
@@ -239,7 +236,7 @@ light:
     id: lea_neopixel
     internal: true
     chipset: WS2812
-    rgb_order: GRB
+    channel_colors: GRB
     pin: GPIO11
     num_leds: 171
     rmt_symbols: 64
